@@ -1,12 +1,9 @@
 'use strict'
 
 import request from 'supertest'
-import http from 'http'
-import {should} from 'chai'
+import chai from 'chai'
 import config from '../config'
-import app from '../server.js'
+import app from '../lib/server.js'
 
-const base_url = 'http://localhost:' + config.port
-//app.listen(base_url)
-
+const should = chai.should()
 

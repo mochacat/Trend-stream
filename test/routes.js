@@ -1,16 +1,14 @@
 'use strict'
 
 import request from 'supertest'
-import http from 'http'
-import {should} from 'chai'
+import chai from 'chai'
 import config from '../config'
-import app from '../server.js'
+import app from '../lib/server'
 
-const base_url = 'http://localhost:' + config.port
-app.listen(base_url)
+const should = chai.should()
 
 describe('Routes test', () => {
-  it('GET / should return home page'), done => {
+  it('GET / should return home page', done => {
     request(app)
       .get('/')
       .expect(200)
@@ -21,13 +19,13 @@ describe('Routes test', () => {
       })
   })
   
-  it('GET /nothing should return 404', done => {
+  it('GET /nothing should return 404 page', done => {
     request(app)
-      .get('nothing')
+      .get('/nothing')
       .expect(404)
+      .expect('Content-Type', 'text/html')
       .end((err, res) => {
         res.status.should.equal(404)
-        res.body.error.should.be('Not found')
         done()
       })
   })
@@ -38,7 +36,7 @@ describe('Routes test', () => {
       .expect(405)
       .end((err, res) => {
         res.status.should.equal(405)
-        res.body.error.should.be('Method Not Allowed')
+        res.body.error.should.equal('POST not supported')
         done()
       })
   })
