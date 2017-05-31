@@ -2,7 +2,7 @@
   "name": "trendstream",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
+  "main": "lib/server.js",
   "scripts": {
     "dev": "nodemon lib/server.js --exec babel-node --presets es2015,stage-2",
     "build": "babel lib -d dist --presets es2015,stage-2",
@@ -23,7 +23,9 @@
     "mongodb": "^2.2.27",
     "mongoose": "^4.10.2",
     "morgan": "^1.8.2",
-    "pug": "^2.0.0-rc.1"
+    "oauth": "^0.9.15",
+    "pug": "^2.0.0-rc.1",
+    "twitter": "^1.7.0"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
