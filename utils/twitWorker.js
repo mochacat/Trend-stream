@@ -1,17 +1,22 @@
 'use strict'
 
-const Twitter = require('twitter')
+const Twitter = require('twitter'),
 //import redis from 'redis'
-const config = require('../config')
-const hashtag = require('../models/Hashtag')
+      config = require('../config'),
+      hashtag = require('../models/Hashtag')
 
 const twitStream = module.exports = function(){
-  this.twitClient = new Twitter({
+  this.twitStreamClient = new Twitter({
     consumer_key: config.consumer_key,
     consumer_secret: config.consumer_secret,
     access_token_key: config.access_token_key,
     access_token_secret: config.access_token_secret
   })
+
+  //TODO populate count object w/ hashtags 
+  //&& create method for realtime count for keywords
+  
+  this.count = null
 
   let currentStream = null
   this.setStream = function(stream){
@@ -35,7 +40,7 @@ twitStream.prototype.track = function(keywords){
 
     console.log(`Connecting to Twitter Streaming API for keywords: ${tags}`)
 
-    const stream = this.twitClient.stream(
+    const stream = this.twitStreamClient.stream(
         'statuses/filter', 
         { track: tags }
     )
