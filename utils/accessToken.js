@@ -15,6 +15,9 @@ var oauth2 = new OAuth2(
 oauth2.getOAuthAccessToken('', {
   'grant_type': 'client_credentials'
 }, function (e, access_token) {
+  if (e){
+    console.log(e)
+  }
   console.log(access_token)
 })
 
