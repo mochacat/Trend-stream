@@ -1,6 +1,7 @@
 'use strict'
 
 const Twitter = require('twitter'),
+      Promise = require('bluebird'),
       flow = require('lodash/fp/flow'),
       filter = require('lodash/fp/filter'),
       orderBy = require('lodash/fp/orderBy'),
@@ -16,27 +17,22 @@ const twitTrends = module.exports = function(config){
 }
 
 //get top hashtag trends from twitter test api
-twitTrends.prototype.getTopTrends = function(next){
-  this.twitRestClient.get('trends/place.json', {id: 1}, (err, res) => {
-    const currentTrends = res[0].trends 
+twitTrends.prototype.getTopTrends = function(){
+  return new Promise((resolve, reject) => {
+    this.twitRestClient.get('trends/place.json', {id: 1}, (err, res) => {
+      if (err){
+        return reject(err)
+      }
+      const currentTrends = res[0].trends 
 
-    const trends = flow(
-      filter(t => t.name.startsWith('#') && t.tweet_volume !== null),
-      orderBy(['tweet_volume'], ['desc']),
-      take(5)
-    )(currentTrends)
-    
-    next(err, trends)
+      const trends = flow(
+        filter(t => t.name.startsWith('#') && t.tweet_volume !== null),
+        orderBy(['tweet_volume'], ['desc']),
+        take(5)
+      )(currentTrends)
+
+      return resolve(trends) 
+    })
   })
 }
 
-/*twitTrends.prototype.storeTrendCount = function(){
-  //TODO persist trend count
-}*/
-
-//TODO twitter caches results for every 5 minutes so don't request more than that
-twitTrends.prototype.requestTimer = function(){
-}
-
-twitTrends.prototype.requestCount = function(){
-}
