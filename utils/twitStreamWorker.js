@@ -15,8 +15,9 @@ const twitStream = module.exports = function(config){
   })
  
   //private 
-  let currentStream = null
-  let count = {}
+  let currentStream = null,
+      keywords = null,
+      count = {}
 
   this.setStream = function(stream){
     currentStream = stream
@@ -25,34 +26,48 @@ const twitStream = module.exports = function(config){
     return currentStream
   }
 
+  this.setKeywords = function(trends){
+    keywords = trends
+  }
+
+  this.getKeywords = function(){
+    return keywords 
+  }
+
   //takes array of tags and adds increments count dict
   this.setCount = function(tags){
-    if (tags === null){
-      count = {}; //reset after stream destroy
-    } else {
+   
+    if (tags == null){
+      count = {}
+    } else{
       _.forEach(tags, tag => {
         count[tag] = count[tag] + 1 || 0
       })
     }
   }
+
   this.getCount = function(){
     return count
   }
 }
 
 //start stream connection for keywords
-twitStream.prototype.track = function(keywords){
+twitStream.prototype.track = function(keywords, next){
+  this.setKeywords(keywords)
+  //destroy old stream because only one streaming connection allowed
+  this.reset()
   
   let currentStream = this.getStream()
-  if (currentStream === null){    
-    if (!keywords.length){
+  if (currentStream === null){
+    let currentKeywords = this.getKeywords()    
+    if (!currentKeywords.length){
       throw new Error('No hashtags to track')
     }
 
     //set count to 0 for each hashtag
-    this.setCount(keywords)
+    this.resetCount()
     //prepare tags for streaming api
-    let tags = keywords.join(',')
+    let tags = currentKeywords.join(',')
 
     console.log(`Connecting to Twitter Streaming API for keywords: ${tags}`)
     
@@ -63,48 +78,54 @@ twitStream.prototype.track = function(keywords){
     
     this.setStream(stream)
    
-      currentStream = this.getStream()
+    currentStream = this.getStream()
+    
+    currentStream.on('data', tweet => {
+      //if tweets are in hashtag list, increment count
+      //tweet.limit.track shows how many missed
+      if (tweet.text !== undefined){
+        let matchTags = _.reduce(tweet.entities.hashtags, (updates, hashtag) => {
+          let tag = `#${hashtag.text}` 
+          if (currentKeywords.indexOf(tag) > -1){
+            updates.push(tag)
+          }
+          return updates
+        }, [])
+        this.setCount(matchTags)
+      } else if(tweet.limit.track !== undefined){
+        //TODO deal with untracked tweets
+      }       
+    })
+
+    currentStream.on('error', err => {
+      console.log(err)
+    })
+    currentStream.on('warning', warning => {
+      console.log(warning)
+    })
       
-      currentStream.on('data', tweet => {
-        //if tweets are in hashtag list, increment count
-        //tweet.limit.track shows how many missed
-        if (tweet.text !== undefined){
-          let matchTags = _.reduce(tweet.entities.hashtags, (updates, hashtag) => {
-            let tag = `#${hashtag.text}` 
-            if (keywords.indexOf(tag) > -1){
-              updates.push(tag)
-            }
-            return updates
-          }, [])
-
-          this.setCount(matchTags)
-        }       
-      })
-
-      currentStream.on('error', err => {
-        console.log(err)
-      })
-      currentStream.on('warning', warning => {
-        console.log(warning)
-      })
-      
-      //every second send total count & reset count to 0
-      var interval = setInterval(() => {
-        let countPerSecond = this.getCount()
-        if (countPerSecond) {
-          console.log(countPerSecond)
-          //persist countPerSecond
-          this.setCount(null)
-          this.setCount(keywords)
-        }
-      }, 1000)
-
-      //TODO clear interval on destroy
-    }
+  }
 }
 
-//destroy the stream connection for keywords
-twitStream.prototype.destroy = function(){
+twitStream.prototype.setCountInterval = function(time, save){
+  //every second send total count & reset count to 0
+  return setInterval(() => {
+    let count = this.getCount()
+    if (count) {
+      save(count)
+      this.resetCount()
+    }
+  }, time)
+}
+
+//rest count to 0 for each keyword
+twitStream.prototype.resetCount = function(){
+  this.setCount(null)
+  this.setCount(this.getKeywords())
+}
+
+//destroy the stream connection for current trends
+twitStream.prototype.reset = function(){
   let currentStream = this.getStream()
 
   if (currentStream !== null){
@@ -112,8 +133,6 @@ twitStream.prototype.destroy = function(){
     currentStream.destroy()
     clearInterval(interval)
     this.setStream(null)
-    this.setCount(null)
+    this.resetCount()
   } 
 }
-
-

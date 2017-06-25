@@ -18,34 +18,44 @@ const handleErr = err => {
   console.error(err.stack)
 }
 
-const updateCount = data => {
-  //update count in the db
-}
-
 const trackTrends = () => { 
   const twitTrends = new twitTrendsWorker(config)
   const twitStream = new twitStreamWorker(config)
   
-  async function track(){
+  return async function(){
     try{
       //run once every 5 minutes
-      let hashtags = await twitTrends.getTopTrends()
+      const hashtags = await twitTrends.getTopTrends()
       await persistTrends(hashtags)
   
-      let keywords = _.map(hashtags, hashtag => hashtag.name)
-      twitStream.destroy() //only one connection allowed by Twitter
-    
-      //tracks total tweets per second
-      let count = await twitStream.track(keywords)
-      console.log(count) //persistCount
+      const keywords = _.map(hashtags, hashtag => hashtag.name)
+      twitStream.track(keywords)
+      const interval = twitStream.setCountInterval(1000, updateRealCount) //
+
     } catch(e){
       handleErr(e)
     }
   }
+}
 
-  //initialize trend tracking
-  track()
-  const trendsInterval = setInterval(() => track(), 300000)
+async function updateRealCount(count){
+  //For now just update real_count in hashtag model
+  //TODO create Count model and add timestamped values
+  try {
+    let tags = Object.keys(count)
+    for (let tag of tags) {
+      let update = await hashtag.update(
+        { name: tag },
+        { $set: { real_count: count[tag] } } 
+      )
+    }
+
+    const newCounts = await hashtag.find({})
+    const savedTags = _.map(newCounts, count => count.name).join(',')
+    console.log(`Updated real count for ${savedTags}`)
+  } catch(e){
+    handleErr(e)
+  }
 }
 
 async function persistTrends(res){
@@ -82,4 +92,10 @@ async function persistTrends(res){
 }
 
 //start tracking trends and listen to tweets
-trackTrends()
+let track = trackTrends()
+//initialize trend counting every 5 minutes
+track()
+setInterval(() => { 
+  const interval = track()
+  setTimeout(() => clearInterval(interval), 300000) 
+}, 300000)
