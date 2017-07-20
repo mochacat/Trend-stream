@@ -1,6 +1,6 @@
 'use strict'
 const mongoose = require('mongoose'),
-      config = require('../config')
+  config = require('../config')
 
 mongoose.connect(config.mongodb)
 

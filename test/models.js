@@ -6,4 +6,3 @@ import config from '../config'
 import app from '../lib/server.js'
 
 const should = chai.should()
-

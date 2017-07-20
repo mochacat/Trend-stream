@@ -1,4 +1,5 @@
 'use strict'
+/* eslint-env mocha */
 
 import request from 'supertest'
 import chai from 'chai'
@@ -13,18 +14,18 @@ describe('Routes test', () => {
       .get('/')
       .expect(200)
       .expect('Content-Type', 'text/html; charset=utf-8')
-      .end((err, res) => {
+      .end(res => {
         res.status.should.equal(200)
-        done() 
+        done()
       })
   })
-  
+
   it('GET /nothing should return 404 page', done => {
     request(app)
       .get('/nothing')
       .expect(404)
       .expect('Content-Type', 'text/html')
-      .end((err, res) => {
+      .end(res => {
         res.status.should.equal(404)
         done()
       })
@@ -34,11 +35,10 @@ describe('Routes test', () => {
     request(app)
       .post('/')
       .expect(405)
-      .end((err, res) => {
+      .end(res => {
         res.status.should.equal(405)
         res.body.error.should.equal('POST not supported')
         done()
       })
   })
-
 })
